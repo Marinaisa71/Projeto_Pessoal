@@ -22,44 +22,69 @@ st.sidebar.header("Escolha os produtos")
 
 lista_final = []
 
-# Loop pelas categorias
+# Loop pelas categorias - VERSÃO MELHORADA
 for categoria, itens in feira.items():
     st.sidebar.subheader(categoria)
-    selecionados = st.sidebar.multiselect(f"Selecione {categoria}", itens)
+    selecionados = st.sidebar.multiselect(f"Selecione {categoria}", itens, key=f"ms_{categoria}")
+    
     for item in selecionados:
-        qtd = st.sidebar.number_input(f"Quantidade de {item}", min_value=1, step=1)
-        lista_final.append({"Item": item, "Quantidade": qtd})
+        # Usando uma chave única para cada número_input
+        qtd = st.sidebar.number_input(
+            f"Quantidade de {item}", 
+            min_value=1, 
+            value=1,  # Valor padrão
+            step=1,
+            key=f"qtd_{categoria}_{item}"  # Chave única
+        )
+        lista_final.append({"Item": item, "Quantidade": qtd, "Categoria": categoria})
 
 # Mostrar lista final
 if lista_final:
     df = pd.DataFrame(lista_final)
+    
     st.subheader("📝 Sua lista de feira:")
     st.table(df)
- # Criar figura do matplotlib
-    fig, ax = plt.subplots(figsize=(6, len(df) * 0.5 + 1))
+    
+    # Criar figura do matplotlib
+    fig, ax = plt.subplots(figsize=(8, len(df) * 0.5 + 1))
     ax.axis("off")  # remove os eixos
+    
+    # Adicionar título
+    ax.set_title("Lista de Feira", fontsize=16, pad=20)
+    
     tabela = ax.table(
-        cellText=df.values,
-        colLabels=df.columns,
+        cellText=df[["Item", "Quantidade"]].values,  # Mostrar apenas Item e Quantidade
+        colLabels=["Item", "Quantidade"],
         loc="center",
         cellLoc="center"
     )
     tabela.auto_set_font_size(False)
-    tabela.set_fontsize(10)
+    tabela.set_fontsize(12)
     tabela.scale(1.2, 1.2)
+    
+    # Estilizar a tabela
+    tabela.auto_set_column_width([0, 1])  # Ajustar largura das colunas
 
     # Converter para bytes
     buf = BytesIO()
-    plt.savefig(buf, format="png", bbox_inches="tight")
+    plt.savefig(buf, format="png", bbox_inches="tight", dpi=150)
     buf.seek(0)
 
     # Exibir no app
-    st.image(buf, caption="Lista de Feira")
+    st.subheader("🖼️ Versão para impressão:")
+    st.image(buf, caption="Lista de Feira", use_column_width=True)
 
     # Botão para baixar a imagem
     st.download_button(
         "📥 Baixar Lista como Imagem",
-        buf,
+        buf.getvalue(),
         "lista_feira.png",
         "image/png"
     )
+    
+    # Botão para limpar a lista
+    if st.button("🗑️ Limpar Lista"):
+        st.experimental_rerun()
+        
+else:
+    st.info("👈 Selecione alguns itens na barra lateral para começar sua lista!")
