@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+from io import BytesIO
 
 st.title("Lista de Feira Automatizada 🛒")
 
@@ -33,7 +35,31 @@ if lista_final:
     df = pd.DataFrame(lista_final)
     st.subheader("📝 Sua lista de feira:")
     st.table(df)
+ # Criar figura do matplotlib
+    fig, ax = plt.subplots(figsize=(6, len(df) * 0.5 + 1))
+    ax.axis("off")  # remove os eixos
+    tabela = ax.table(
+        cellText=df.values,
+        colLabels=df.columns,
+        loc="center",
+        cellLoc="center"
+    )
+    tabela.auto_set_font_size(False)
+    tabela.set_fontsize(10)
+    tabela.scale(1.2, 1.2)
 
-    # Botão para exportar
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Baixar Lista em CSV", csv, "lista_feira.csv", "text/csv")
+    # Converter para bytes
+    buf = BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+
+    # Exibir no app
+    st.image(buf, caption="Lista de Feira")
+
+    # Botão para baixar a imagem
+    st.download_button(
+        "📥 Baixar Lista como Imagem",
+        buf,
+        "lista_feira.png",
+        "image/png"
+    )
