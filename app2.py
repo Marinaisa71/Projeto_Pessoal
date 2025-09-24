@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from io import StringIO
+import matplotlib.pyplot as plt
+from io import BytesIO
 
 st.title("Lista de Feira Automatizada 🛒")
 
@@ -27,46 +28,60 @@ for categoria, itens in feira.items():
     selecionados = st.sidebar.multiselect(f"Selecione {categoria}", itens, key=f"ms_{categoria}")
     for item in selecionados:
         qtd = st.sidebar.number_input(f"Quantidade de {item}", min_value=1, step=1, value=1, key=f"qtd_{categoria}_{item}")
-        lista_final.append({"Item": item, "Quantidade": qtd, "Categoria": categoria})
+        lista_final.append({"Item": item, "Quantidade": qtd})
 
 # Mostrar lista final
 if lista_final:
     df = pd.DataFrame(lista_final)
-    
     st.subheader("📝 Sua lista de feira:")
     st.table(df)
     
-    # Criar versão para download sem matplotlib
-    st.subheader("💾 Download da Lista")
+    # Criar figura do matplotlib
+    fig, ax = plt.subplots(figsize=(10, max(4, len(df) * 0.3)))
+    ax.axis("off")  # remove os eixos
     
-    # Opção 1: CSV
-    csv = df.to_csv(index=False)
-    st.download_button(
-        "📥 Baixar como CSV",
-        csv,
-        "lista_feira.csv",
-        "text/csv"
+    # Criar tabela matplotlib
+    tabela = ax.table(
+        cellText=df.values,
+        colLabels=df.columns,
+        loc="center",
+        cellLoc="center"
     )
     
-    # Opção 2: Texto simples
-    texto_lista = "LISTA DE FEIRA:\n\n"
-    for item in lista_final:
-        texto_lista += f"✓ {item['Item']}: {item['Quantidade']} un\n"
+    # Estilizar a tabela
+    tabela.auto_set_font_size(False)
+    tabela.set_fontsize(12)
+    tabela.scale(1.2, 1.5)
     
-    st.download_button(
-        "📥 Baixar como Texto",
-        texto_lista,
-        "lista_feira.txt",
-        "text/plain"
-    )
+    # Estilizar células
+    for i in range(len(df.columns)):
+        tabela[(0, i)].set_facecolor('#4CAF50')  # Cabeçalho verde
+        tabela[(0, i)].set_text_props(weight='bold', color='white')
     
-    # Opção 3: HTML (para impressão)
-    html = df.to_html(index=False)
+    # Adicionar título
+    plt.title("Lista de Feira", fontsize=16, pad=20, weight='bold')
+    
+    # Ajustar layout
+    plt.tight_layout()
+    
+    # Converter para bytes
+    buf = BytesIO()
+    plt.savefig(buf, format="png", dpi=150, bbox_inches='tight', facecolor='white')
+    buf.seek(0)
+    
+    # Fechar a figura para liberar memória
+    plt.close()
+
+    # Exibir preview da imagem
+    st.subheader("🖼️ Preview para Download:")
+    st.image(buf, caption="Sua lista de feira (imagem)", use_column_width=True)
+    
+    # Botão para baixar a imagem
     st.download_button(
-        "📥 Baixar como HTML",
-        html,
-        "lista_feira.html",
-        "text/html"
+        "📥 Baixar Lista como Imagem (PNG)",
+        buf.getvalue(),
+        "lista_feira.png",
+        "image/png"
     )
     
     # Botão para limpar a lista
